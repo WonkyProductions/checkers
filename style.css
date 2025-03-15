@@ -1,0 +1,417 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background: linear-gradient(135deg, #0a0e14, #1a1f29);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: 'Orbitron', 'Arial', sans-serif;
+    color: #ecf0f1;
+}
+
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    transition: opacity 0.5s ease;
+}
+
+.hidden {
+    display: none;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Menu Screen */
+.menu-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(10, 15, 25, 0.85);
+    padding: 40px;
+    border-radius: 15px;
+    border: 3px solid rgba(52, 152, 219, 0.3);
+    box-shadow: 0 0 50px rgba(52, 152, 219, 0.2), 
+                inset 0 0 20px rgba(52, 152, 219, 0.1);
+    backdrop-filter: blur(10px);
+    animation: glow 3s ease-in-out infinite alternate;
+    position: relative;
+}
+
+
+.game-title {
+    font-size: 64px;
+    margin-bottom: 40px;
+    letter-spacing: 4px;
+    text-shadow: 0 0 20px rgba(52, 152, 219, 0.2),
+                 0 0 40px rgba(52, 152, 219, 0.1);
+    background: linear-gradient(to right, #2ecc71, #3498db, #e74c3c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.menu-options {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 250px;
+}
+
+.menu-button  {
+    padding: 15px 25px;
+    background: linear-gradient(to bottom, #2c3e50, #1a252f);
+    color: #ecf0f1;
+    border: 2px solid #3498db;
+    border-radius: 8px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4),
+                inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    margin-bottom: 10px; /* Adjust this value to move them up */
+}
+.game-button{
+    padding: 15px 25px;
+    background: linear-gradient(to bottom, #2c3e50, #1a252f);
+    color: #ecf0f1;
+    border: 2px solid #3498db;
+    border-radius: 8px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4),
+                inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    margin-bottom: 89px; /* Adjust this value to move them up */
+}
+.menu-button:hover, .game-button:hover {
+    background: linear-gradient(to bottom, #3498db, #2980b9);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+.menu-button:active, .game-button:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.controls-container {
+    background-color: rgba(10, 15, 25, 0.85);
+    padding: 30px 40px;
+    border-radius: 15px;
+    border: 3px solid rgba(52, 152, 219, 0.3);
+    box-shadow: 0 0 30px rgba(52, 152, 219, 0.2);
+    backdrop-filter: blur(10px);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 600px;
+}
+.player-controls:nth-child(2) { /* Targets the second .player-controls div (RED TANK) */
+    margin-left: 200px; /* Adjust this value to move it further right */
+}
+.screen-title {
+    font-size: 36px;
+    margin-bottom: 30px;
+    letter-spacing: 3px;
+    text-shadow: 0 0 15px rgba(52, 152, 219, 0.5);
+}
+
+.controls-grid {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 30px;
+}
+
+.player-controls {
+    width: 48%;
+}
+
+.player-title {
+    text-align: center;
+    font-size: 22px;
+    margin-bottom: 15px;
+    letter-spacing: 2px;
+}
+
+.green-text {
+    color: #2ecc71;
+    text-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+}
+
+.red-text {
+    color: #e74c3c;
+    text-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+}
+
+.controls-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+.controls-list li {
+    margin-bottom: 10px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.key {
+    display: inline-block;
+    background: linear-gradient(to bottom, #34495e, #2c3e50);
+    border: 2px solid #3498db;
+    padding: 4px 8px;
+    margin-right: 15px;
+    border-radius: 6px;
+    min-width: 30px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4),
+                inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Game Screen */
+.game-container {
+    position: absolute;
+    top: 23%; /* This positions the container 70% from the bottom */
+    left: 50%;
+    transform: translateX(-50%);
+    filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5));
+    text-align: center; /* Center the canvas */
+}
+
+canvas {
+    display: block;
+    background-color: #1a1f29;
+    border: 4px solid #34495e;
+    box-shadow: 0 0 30px rgba(52, 152, 219, 0.3),
+                inset 0 0 20px rgba(0, 0, 0, 0.6);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+#health-bars-container {
+    position: absolute;
+    top: -110px; /* Reduced top value to move them up */
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-around;
+    padding: 0 10px;
+    width: 100%;
+    box-sizing: border-box;
+    z-index: 20;
+}
+
+.health-bar-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    border: 3px solid #34495e;
+    border-radius: 12px;
+    background-color: rgba(10, 15, 25, 0.85);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+    width: 45%;
+    backdrop-filter: blur(5px);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.health-bar-container:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+.health-bar-label {
+    margin-bottom: 8px;
+    font-weight: bold;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+    letter-spacing: 1px;
+    font-size: 16px;
+}
+
+.health-bar-wrapper {
+    width: 100%;
+    height: 30px;
+    background-color: #1a1f29;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #34495e;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.health-bar {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    background-image: linear-gradient(to right, rgba(255,255,255,0.1), rgba(255,255,255,0.2));
+    position: relative;
+    overflow: hidden;
+}
+
+.health-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: healthBarShine 1.5s infinite;
+}
+
+#tank1-health {
+    background-color: #2ecc71;
+}
+
+#tank2-health {
+    background-color: #e74c3c;
+}
+
+#game-message {
+    position: absolute;
+    top: 20%; /* Your desired top position */
+    left: 50%; /* Place the left edge at the center of the parent */
+    transform: translateX(-50%); /* Shift the element left by half its width */
+    font-size: 46px;
+    font-weight: bold;
+    text-shadow: 0 0 15px rgba(52, 152, 219, 0.7);
+    background-color: rgba(0, 0, 0, 0.85);
+    padding: 25px 40px;
+    border-radius: 15px;
+    display: none;
+    border: 3px solid rgba(52, 152, 219, 0.3);
+    letter-spacing: 3px;
+    box-shadow: 0 0 30px rgba(52, 152, 219, 0.3);
+    text-align: center;
+}
+
+#game-buttons {
+    position: absolute;
+    bottom: 22%; /* Adjust this percentage as needed */
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    flex-direction: row;
+    gap: 20px;
+    z-index: 100;
+}
+
+
+
+
+/* Animations */
+@keyframes messageAppear {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -40%);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+@keyframes explosionPulse {
+    0% {
+        opacity: 0;
+        transform: scale(0.2);
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.8;
+        transform: scale(1.2);
+    }
+}
+
+@keyframes healthBarShine {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+@keyframes glow {
+    0% {
+        box-shadow: 0 0 20px rgba(52, 152, 219, 0.2), 
+                    inset 0 0 10px rgba(52, 152, 219, 0.1);
+    }
+    100% {
+        box-shadow: 0 0 40px rgba(52, 152, 219, 0.4), 
+                    inset 0 0 20px rgba(52, 152, 219, 0.2);
+    }
+}
+
+/* Background pattern */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(circle at 25% 25%, rgba(52, 152, 219, 0.05) 1%, transparent 2%),
+        radial-gradient(circle at 75% 75%, rgba(52, 152, 219, 0.05) 1%, transparent 2%);
+    background-size: 50px 50px;
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    .controls-container {
+        min-width: auto;
+        width: 90%;
+        padding: 20px;
+        
+    }
+    
+    .controls-grid {
+        flex-direction: column;
+    }
+    
+    .player-controls {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    
+    .game-title {
+        font-size: 42px;
+    }
+    
+    #health-bars-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .health-bar-container {
+        width: 90%;
+    }
+}
