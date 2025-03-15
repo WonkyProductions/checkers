@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Dungeon Crawler</title>
+    <style>
+        body {
+            background-color: #222;
+            color: #ccc;
+            font-family: monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 60px;
+        }
+        #game-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .player-red {
+            color: white;
+            font-family: monospace;
+            
+        }
+        #game {
+            background-color: #111;
+            color: #979797;
+            padding: 10px;
+            white-space: pre;
+            font-size: 16px;
+            line-height: 1;
+            border: 1px solid #444;
+            width: 600px;
+            height: 400px;
+            overflow: hidden;
+            
+        }
+        .enemy-green {
+            color: green;
+        }
+        #stats {
+            background-color: #111;
+            padding: 10px;
+            border: 1px solid #444;
+            width: 200px;
+        }
+        #log {
+            background-color: #111;
+            color: #eee;
+            padding: 10px;
+            border: 1px solid #444;
+            width: 830px;
+            height: 100px;
+            margin-top: 20px;
+            overflow-y: scroll;
+        }
+        #controls {
+            margin-top: 20px;
+            background-color: #111;
+            padding: 10px;
+            border: 1px solid #444;
+            width: 830px;
+        }
+        h1, h2 {
+            color: #ff8800;
+        }
+        .health {
+            color: #ff6666;
+        }
+        .attack {
+            color: #ffcc00;
+        }
+        .defense {
+            color: #66ccff;
+        }
+        button {
+            background-color: #333;
+            color: #eee;
+            border: 1px solid #666;
+            padding: 5px 10px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #444;
+        }
+        .gold-yellow {
+    color: yellow;
+}
+
+.potion-red {
+    color: red;
+}
+.stairs-white {
+    color: white;
+}
+    </style>
+</head>
+<body>
+    <h1>ASCII Dungeon Crawler</h1>
+    
+    <div id="game-container">
+        <div id="game"></div>
+        <div id="stats">
+            <h2>Player Stats</h2>
+            <p>Level: <span id="level">1</span></p>
+            <p>XP: <span id="xp">0</span>/<span id="next-level">10</span></p>
+            <p class="health">Health: <span id="health">20</span>/<span id="max-health">20</span></p>
+            <p class="attack">Attack: <span id="attack">3</span></p>
+            <p class="defense">Defense: <span id="defense">1</span></p>
+            <p>Gold: <span id="gold">0</span></p>
+            <p>Potions: <span id="potions">1</span></p>
+            <p>Floor: <span id="floor">1</span></p>
+        </div>
+    </div>
+    
+    <div id="log"></div>
+    
+    <div id="controls">
+        <p>Move: Arrow Keys or WASD | Drink Potion: P | New Game: R</p>
+        <button id="move-up">Up (W)</button>
+        <button id="move-left">Left (A)</button>
+        <button id="move-down">Down (S)</button>
+        <button id="move-right">Right (D)</button>
+        <button id="drink-potion">Drink Potion (P)</button>
+        <button id="new-game">New Game (R)</button>
+    </div>
+
+    <script>
+        // Game constants
+        const GRID_WIDTH = 63;
+        const GRID_HEIGHT = 25;
+        const MAX_ROOMS = 9;
+        const MIN_ROOM_SIZE = 3;
+        const MAX_ROOM_SIZE = 8;
+        
+        // Game entities
+        const EMPTY = ' ';
+        const WALL = 'X';
+        const PLAYER = '★';
+        const STAIRS = '>';
+        const ENEMY_TYPES = ['g', 'o', 'T', 'D'];
+        const ENEMY_NAMES = {
+            'g': 'Goblin',
+            'o': 'Orc',
+            'T': 'Troll',
+            'D': 'Dragon'
+        };
+        const ENEMY_STATS = {
+            'g': { health: 5, attack: 2, defense: 0, xp: 2, gold: 1 },
+            'o': { health: 10, attack: 3, defense: 1, xp: 5, gold: 3 },
+            'T': { health: 20, attack: 5, defense: 2, xp: 10, gold: 7 },
+            'D': { health: 40, attack: 8, defense: 4, xp: 20, gold: 15 }
+        };
+        const POTION = 'p';
+        const GOLD = '$';
+        
+        // Game state
+        let grid = [];
+        let player = {
+            x: 0,
+            y: 0,
+            health: 20,
+            maxHealth: 20,
+            attack: 3,
+            defense: 1,
+            gold: 0,
+            potions: 1,
+            level: 1,
+            xp: 0,
+            nextLevel: 10,
+            floor: 1
+        };
+        let enemies = [];
+        let items = [];
+        let rooms = [];
+        let gameOver = false;
+        
+        // DOM elements
+        const gameElement = document.getElementById('game');
+        const logElement = document.getElementById('log');
+        const healthElement = document.getElementById('health');
+        const maxHealthElement = document.getElementById('max-health');
+        const attackElement = document.getElementById('attack');
+        const defenseElement = document.getElementById('defense');
+        const goldElement = document.getElementById('gold');
+        const potionsElement = document.getElementById('potions');
+        const levelElement = document.getElementById('level');
+        const xpElement = document.getElementById('xp');
+        const nextLevelElement = document.getElementById('next-level');
+        const floorElement = document.getElementById('floor');
+        
+        // Initialize the game
+        function initGame() {
+            grid = [];
+            enemies = [];
+            items = [];
+            rooms = [];
+            gameOver = false;
+            
+            // Reset player stats except for progression between floors
+            if (player.floor === 1) {
+                player = {
+                    x: 0,
+                    y: 0,
+                    health: 20,
+                    maxHealth: 20,
+                    attack: 3,
+                    defense: 1,
+                    gold: 0,
+                    potions: 1,
+                    level: 1,
+                    xp: 0,
+                    nextLevel: 10,
+                    floor: 1
+                };
+            } else {
+                player.health = player.maxHealth;
+                player.potions += 1;
+            }
+            
+            // Initialize grid with walls
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                const row = [];
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    row.push(WALL);
+                }
+                grid.push(row);
+            }
+            
+            // Generate rooms
+            generateRooms();
+            
+            // Connect rooms
+            connectRooms();
+            
+            // Place player in the first room
+            if (rooms.length > 0) {
+                const startRoom = rooms[0];
+                player.x = Math.floor(startRoom.x + startRoom.width / 2);
+                player.y = Math.floor(startRoom.y + startRoom.height / 2);
+                grid[player.y][player.x] = PLAYER;
+            }
+            
+            // Place stairs in the last room
+            if (rooms.length > 0) {
+                const lastRoom = rooms[rooms.length - 1];
+                const stairsX = Math.floor(lastRoom.x + lastRoom.width / 2);
+                const stairsY = Math.floor(lastRoom.y + lastRoom.height / 2);
+                grid[stairsY][stairsX] = STAIRS;
+            }
+            
+            // Place enemies
+            placeEnemies();
+            
+            // Place items
+            placeItems();
+            
+            // Update UI
+            updateGame();
+            updateStats();
+            
+            // Log message
+            logMessage(`You enter floor ${player.floor} of the dungeon...`);
+        }
+        
+        // Generate random rooms
+        function generateRooms() {
+            for (let i = 0; i < MAX_ROOMS; i++) {
+                const width = Math.floor(Math.random() * (MAX_ROOM_SIZE - MIN_ROOM_SIZE + 1)) + MIN_ROOM_SIZE;
+                const height = Math.floor(Math.random() * (MAX_ROOM_SIZE - MIN_ROOM_SIZE + 1)) + MIN_ROOM_SIZE;
+                const x = Math.floor(Math.random() * (GRID_WIDTH - width - 2)) + 1;
+                const y = Math.floor(Math.random() * (GRID_HEIGHT - height - 2)) + 1;
+                
+                // Check if the room overlaps with existing rooms
+                let overlaps = false;
+                for (const room of rooms) {
+                    if (
+                        x < room.x + room.width + 1 &&
+                        x + width + 1 > room.x &&
+                        y < room.y + room.height + 1 &&
+                        y + height + 1 > room.y
+                    ) {
+                        overlaps = true;
+                        break;
+                    }
+                }
+                
+                if (!overlaps) {
+                    // Create room
+                    for (let ry = y; ry < y + height; ry++) {
+                        for (let rx = x; rx < x + width; rx++) {
+                            grid[ry][rx] = EMPTY;
+                        }
+                    }
+                    
+                    rooms.push({ x, y, width, height });
+                }
+            }
+        }
+        
+        // Connect rooms with corridors
+        function connectRooms() {
+            for (let i = 0; i < rooms.length - 1; i++) {
+                const startRoom = rooms[i];
+                const endRoom = rooms[i + 1];
+                
+                const startX = Math.floor(startRoom.x + startRoom.width / 2);
+                const startY = Math.floor(startRoom.y + startRoom.height / 2);
+                const endX = Math.floor(endRoom.x + endRoom.width / 2);
+                const endY = Math.floor(endRoom.y + endRoom.height / 2);
+                
+                // Randomly decide if we go horizontal first or vertical first
+                if (Math.random() < 0.5) {
+                    // Horizontal first
+                    createHorizontalCorridor(startX, endX, startY);
+                    createVerticalCorridor(startY, endY, endX);
+                } else {
+                    // Vertical first
+                    createVerticalCorridor(startY, endY, startX);
+                    createHorizontalCorridor(startX, endX, endY);
+                }
+            }
+        }
+        
+        // Create horizontal corridor
+        function createHorizontalCorridor(startX, endX, y) {
+            const start = Math.min(startX, endX);
+            const end = Math.max(startX, endX);
+            
+            for (let x = start; x <= end; x++) {
+                grid[y][x] = EMPTY;
+            }
+        }
+        
+        // Create vertical corridor
+        function createVerticalCorridor(startY, endY, x) {
+            const start = Math.min(startY, endY);
+            const end = Math.max(startY, endY);
+            
+            for (let y = start; y <= end; y++) {
+                grid[y][x] = EMPTY;
+            }
+        }
+        
+        // Place enemies in the dungeon
+        function placeEnemies() {
+            const numEnemies = 5 + Math.floor(player.floor * 1.5);
+            
+            for (let i = 0; i < numEnemies; i++) {
+                let x, y;
+                let attempts = 0;
+                
+                do {
+                    const roomIndex = Math.floor(Math.random() * rooms.length);
+                    const room = rooms[roomIndex];
+                    
+                    x = Math.floor(Math.random() * (room.width - 2)) + room.x + 1;
+                    y = Math.floor(Math.random() * (room.height - 2)) + room.y + 1;
+                    
+                    attempts++;
+                } while ((grid[y][x] !== EMPTY || isPlayerAdjacent(x, y)) && attempts < 100);
+                
+                if (attempts < 100) {
+                    // Determine enemy type based on dungeon floor
+                    let enemyPool;
+                    if (player.floor <= 2) {
+                        enemyPool = [ENEMY_TYPES[0], ENEMY_TYPES[0], ENEMY_TYPES[1]];
+                    } else if (player.floor <= 4) {
+                        enemyPool = [ENEMY_TYPES[0], ENEMY_TYPES[1], ENEMY_TYPES[1], ENEMY_TYPES[2]];
+                    } else {
+                        enemyPool = [ENEMY_TYPES[1], ENEMY_TYPES[2], ENEMY_TYPES[2], ENEMY_TYPES[3]];
+                    }
+                    
+                    const enemyType = enemyPool[Math.floor(Math.random() * enemyPool.length)];
+                    
+                    // Scale enemies based on floor
+                    const baseStats = ENEMY_STATS[enemyType];
+                    const floorMultiplier = 1 + (player.floor - 1) * 0.3;
+                    
+                    const enemy = {
+                        x, 
+                        y,
+                        type: enemyType,
+                        health: Math.floor(baseStats.health * floorMultiplier),
+                        maxHealth: Math.floor(baseStats.health * floorMultiplier),
+                        attack: Math.floor(baseStats.attack * floorMultiplier),
+                        defense: Math.floor(baseStats.defense * floorMultiplier),
+                        xp: Math.floor(baseStats.xp * floorMultiplier),
+                        gold: Math.floor(baseStats.gold * floorMultiplier)
+                    };
+                    
+                    enemies.push(enemy);
+                    grid[y][x] = enemyType;
+                }
+            }
+        }
+        
+        // Check if the player is adjacent to a position
+        function isPlayerAdjacent(x, y) {
+            return (
+                (Math.abs(player.x - x) <= 1 && Math.abs(player.y - y) <= 1)
+            );
+        }
+        
+        // Place items in the dungeon
+        function placeItems() {
+            // Place potions
+            const numPotions = 2 + Math.floor(player.floor * 0.5);
+            placeItem(POTION, numPotions);
+            
+            // Place gold
+            const numGold = 4 + Math.floor(player.floor * 0.8);
+            placeItem(GOLD, numGold);
+        }
+        
+        // Place a specific item in the dungeon
+        function placeItem(itemType, count) {
+            for (let i = 0; i < count; i++) {
+                let x, y;
+                let attempts = 0;
+                
+                do {
+                    const roomIndex = Math.floor(Math.random() * rooms.length);
+                    const room = rooms[roomIndex];
+                    
+                    x = Math.floor(Math.random() * (room.width - 2)) + room.x + 1;
+                    y = Math.floor(Math.random() * (room.height - 2)) + room.y + 1;
+                    
+                    attempts++;
+                } while (grid[y][x] !== EMPTY && attempts < 100);
+                
+                if (attempts < 100) {
+                    grid[y][x] = itemType;
+                    items.push({ x, y, type: itemType });
+                }
+            }
+        }
+        
+        // Handle player movement
+        function movePlayer(dx, dy) {
+            if (gameOver) return;
+            
+            const newX = player.x + dx;
+            const newY = player.y + dy;
+            
+            // Check if the move is valid (not a wall)
+            if (newX >= 0 && newX < GRID_WIDTH && newY >= 0 && newY < GRID_HEIGHT) {
+                const targetCell = grid[newY][newX];
+                
+                if (targetCell === EMPTY) {
+                    // Move to empty space
+                    grid[player.y][player.x] = EMPTY;
+                    player.x = newX;
+                    player.y = newY;
+                    grid[player.y][player.x] = PLAYER;
+                    
+                    // Move enemies
+                    moveEnemies();
+                } else if (targetCell === STAIRS) {
+                    // Go to next floor
+                    player.floor++;
+                    logMessage(`You descended to floor ${player.floor}!`);
+                    initGame();
+                    return;
+                } else if (targetCell === POTION) {
+                    // Pick up potion
+                    grid[newY][newX] = EMPTY;
+                    player.potions++;
+                    removeItem(newX, newY);
+                    logMessage("You found a health potion!");
+                    updateStats();
+                    
+                    // Move enemies
+                    moveEnemies();
+                } else if (targetCell === GOLD) {
+                    // Pick up gold
+                    grid[newY][newX] = EMPTY;
+                    const goldAmount = Math.floor(Math.random() * 5) + 1 + Math.floor(player.floor * 0.5);
+                    player.gold += goldAmount;
+                    removeItem(newX, newY);
+                    logMessage(`You found ${goldAmount} gold!`);
+                    updateStats();
+                    
+                    // Move enemies
+                    moveEnemies();
+                } else if (ENEMY_TYPES.includes(targetCell)) {
+                    // Attack enemy
+                    attackEnemy(newX, newY);
+                }
+            }
+            
+            updateGame();
+        }
+        
+        // Remove an item from the items array
+        function removeItem(x, y) {
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].x === x && items[i].y === y) {
+                    items.splice(i, 1);
+                    break;
+                }
+            }
+        }
+        
+        // Attack an enemy
+        function attackEnemy(x, y) {
+            const enemyIndex = enemies.findIndex(e => e.x === x && e.y === y);
+            
+            if (enemyIndex !== -1) {
+                const enemy = enemies[enemyIndex];
+                
+                // Calculate damage
+                let damage = Math.max(1, player.attack - enemy.defense);
+                
+                // Apply damage
+                enemy.health -= damage;
+                
+                logMessage(`You hit the ${ENEMY_NAMES[enemy.type]} for ${damage} damage!`);
+                
+                // Check if enemy is defeated
+                if (enemy.health <= 0) {
+                    logMessage(`You defeated the ${ENEMY_NAMES[enemy.type]}!`);
+                    logMessage(`You gained ${enemy.xp} XP and ${enemy.gold} gold!`);
+                    
+                    player.xp += enemy.xp;
+                    player.gold += enemy.gold;
+                    
+                    // Check for level up
+                    checkLevelUp();
+                    
+                    // Remove enemy
+                    grid[y][x] = EMPTY;
+                    enemies.splice(enemyIndex, 1);
+                } else {
+                    // Enemy attacks back
+                    enemyAttack(enemy);
+                }
+                
+                updateStats();
+            }
+        }
+        
+        // Enemy attacks the player
+        function enemyAttack(enemy) {
+            let damage = Math.max(1, enemy.attack - player.defense);
+            
+            player.health -= damage;
+            
+            logMessage(`The ${ENEMY_NAMES[enemy.type]} hits you for ${damage} damage!`);
+            
+            // Check if player is defeated
+            if (player.health <= 0) {
+                player.health = 0;
+                gameOver = true;
+                logMessage("You have been defeated! Press R to start a new game.");
+            }
+            
+            updateStats();
+        }
+        
+        // Move enemies
+        function moveEnemies() {
+            for (const enemy of enemies) {
+                if (Math.random() < 0.6) {
+                    // Calculate distance to player
+                    const dx = player.x - enemy.x;
+                    const dy = player.y - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Only move if enemy is close enough to the player
+                    if (distance < 6) {
+                        // Determine direction towards player
+                        let newX = enemy.x;
+                        let newY = enemy.y;
+                        
+                        if (Math.abs(dx) > Math.abs(dy)) {
+                            // Move horizontally
+                            newX += dx > 0 ? 1 : -1;
+                        } else {
+                            // Move vertically
+                            newY += dy > 0 ? 1 : -1;
+                        }
+                        
+                        // Check if move is valid
+                        if (newX >= 0 && newX < GRID_WIDTH && newY >= 0 && newY < GRID_HEIGHT) {
+                            const targetCell = grid[newY][newX];
+                            
+                            if (targetCell === EMPTY) {
+                                // Move enemy
+                                grid[enemy.y][enemy.x] = EMPTY;
+                                grid[newY][newX] = enemy.type;
+                                enemy.x = newX;
+                                enemy.y = newY;
+                            } else if (targetCell === PLAYER) {
+                                // Attack player
+                                enemyAttack(enemy);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Check if player levels up
+        function checkLevelUp() {
+            if (player.xp >= player.nextLevel) {
+                player.level++;
+                player.xp -= player.nextLevel;
+                player.nextLevel = Math.floor(player.nextLevel * 1.5);
+                
+                // Increase stats
+                player.maxHealth += 5;
+                player.health = player.maxHealth;
+                player.attack += 1;
+                player.defense += Math.floor(player.level % 2);
+                
+                logMessage(`Level up! You are now level ${player.level}!`);
+                updateStats();
+            }
+        }
+        
+        // Use a potion
+        function usePotion() {
+            if (gameOver) return;
+            
+            if (player.potions > 0) {
+                const healAmount = 10;
+                player.health = Math.min(player.health + healAmount, player.maxHealth);
+                player.potions--;
+                
+                logMessage(`You drink a potion and heal ${healAmount} health!`);
+                updateStats();
+                moveEnemies();
+                updateGame();
+            } else {
+                logMessage("You don't have any potions!");
+            }
+        }
+        
+        // Update the game display
+        function updateGame() {
+    let display = '';
+
+    for (let y = 0; y < GRID_HEIGHT; y++) {
+        for (let x = 0; x < GRID_WIDTH; x++) {
+            if (grid[y][x] === PLAYER) {
+                display += '<span class="player-red" >+</span>';
+            } else if (ENEMY_TYPES.includes(grid[y][x])) {
+                display += `<span class="enemy-green">${grid[y][x]}</span>`;
+            } else if (grid[y][x] === GOLD) {
+                display += `<span class="gold-yellow">${grid[y][x]}</span>`;
+            } else if (grid[y][x] === POTION) {
+                display += `<span class="potion-red">${grid[y][x]}</span>`;
+            } else if (grid[y][x] === STAIRS) {
+                display += `<span class="stairs-white">${grid[y][x]}</span>`;
+            }else {
+                display += grid[y][x];
+            }
+        }
+        display += '\n';
+    }
+    gameElement.innerHTML = display;
+}
+        
+        // Update player stats
+        function updateStats() {
+            healthElement.textContent = player.health;
+            maxHealthElement.textContent = player.maxHealth;
+            attackElement.textContent = player.attack;
+            defenseElement.textContent = player.defense;
+            goldElement.textContent = player.gold;
+            potionsElement.textContent = player.potions;
+            levelElement.textContent = player.level;
+            xpElement.textContent = player.xp;
+            nextLevelElement.textContent = player.nextLevel;
+            floorElement.textContent = player.floor;
+        }
+        
+        // Log a message
+        function logMessage(message) {
+            const messageElement = document.createElement('div');
+            messageElement.textContent = message;
+            logElement.appendChild(messageElement);
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        // Event listeners for keyboard and buttons
+        document.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    movePlayer(0, -1);
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    movePlayer(0, 1);
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    movePlayer(-1, 0);
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    movePlayer(1, 0);
+                    break;
+                case 'p':
+                case 'P':
+                    usePotion();
+                    break;
+                case 'r':
+                case 'R':
+                    player.floor = 1;
+                    initGame();
+                    break;
+            }
+        });
+        
+        document.getElementById('move-up').addEventListener('click', () => movePlayer(0, -1));
+        document.getElementById('move-down').addEventListener('click', () => movePlayer(0, 1));
+        document.getElementById('move-left').addEventListener('click', () => movePlayer(-1, 0));
+        document.getElementById('move-right').addEventListener('click', () => movePlayer(1, 0));
+        document.getElementById('drink-potion').addEventListener('click', usePotion);
+        document.getElementById('new-game').addEventListener('click', () => {
+            player.floor = 1;
+            initGame();
+        });
+        
+        // Start the game
+        initGame();
+    </script>
+</body>
+</html>
